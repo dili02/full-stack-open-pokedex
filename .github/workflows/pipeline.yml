@@ -92,6 +92,20 @@ jobs:
           start: npm run start-test
           wait-on: http://localhost:5000
 
+  bumpVersion:
+    needs: [test, e2eTest]
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # last commit
+      - name: Bump version and push tag
+        uses: anothrNick/github-tag-action@1.36.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BUMP: patch
+          DRY_RUN: true
+
   deploy:
     needs: [test, e2eTest]
     runs-on: ubuntu-18.04
@@ -111,14 +125,21 @@ jobs:
           rollbackonhealthcheckfailed: true
           procfile: "web: npm start"
 
-  bumpVersion:
+  slackNotify:
+    needs: [deploy]
     runs-on: ubuntu-18.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: 8398a7/action-slack@v3
         with:
-          fetch-depth: 0 # last commit
-      - name: Bump version and push tag
-        uses: anothrNick/github-tag-action@1.36.0
+          status: custom
+          fields: workflow,job,commit,repo,ref,author,took
+          custom_payload: |
+            {
+              attachments: [{
+                color: '${{ job.status }}' === 'success' ? 'good' : '${{ job.status }}' === 'failure' ? 'danger' : 'warning',
+                text: `${process.env.AS_WORKFLOW}\n${process.env.AS_JOB} (${process.env.AS_COMMIT}) of ${process.env.AS_REPO}@${process.env.AS_REF} by ${process.env.AS_AUTHOR} ${{ job.status }} in ${process.env.AS_TOOK}`,
+              }]
+            }
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WITH_V: true
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: always() # Pick up events even if the job fails or is canceled.
