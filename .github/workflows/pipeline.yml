@@ -16,7 +16,7 @@ jobs:
         with:
           node-version: "14"
       - name: install dependencies
-        run: npm install --no-audit --no-fund --no-optional
+        run: npm ci # npm install optimized
       - name: lint
         run: npm run eslint
       - name: build app
