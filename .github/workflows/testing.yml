@@ -1,0 +1,47 @@
+name: Testing stuff
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  a_test_job:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: gihub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+
+      - name: commits
+        env:
+          COMMITS: ${{ toJson(github.event.commits) }}
+        run: echo "$COMMITS"
+
+      - name: commit messages
+        env:
+          COMMIT_MESSAGES: ${{ toJson(github.event.commits.*.message) }}
+        run: echo "$COMMIT_MESSAGES"
+
+      - name: joined messages
+        env:
+          JOINED_MESSAGES: ${{ join(github.event.commits.*.message, ', ') }}
+        run: echo "$JOINED_MESSAGES"
+
+      - name: contains skip with hashtag
+        env:
+          CONTAINS_SKIP_HASHTAG: ${{ contains(join(github.event.commits.*.message, ', '), '#skip') }}
+        run: echo "$CONTAINS_SKIP_HASHTAG"
+
+      - name: contains skip
+        env:
+          CONTAINS_SKIP: ${{ contains(join(github.event.commits.*.message, ', '), 'skip') }}
+        run: echo "$CONTAINS_SKIP"
+
+      - name: contains random
+        env:
+          CONTAINS_RANDOM: ${{ contains(join(github.event.commits.*.message, ', '), 'random') }}
+        run: echo "$CONTAINS_RANDOM"
